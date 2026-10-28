@@ -1,0 +1,120 @@
+{
+  "entities": {
+    "Expense": {
+      "title": "Expense",
+      "description": "Un registro de gasto personal registrado manualmente o vía lenguaje natural",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID del usuario propietario autenticado"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Monto numérico positivo del gasto"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Código de moneda (PEN, USD, EUR)",
+          "enum": ["PEN", "USD", "EUR"]
+        },
+        "category": {
+          "type": "string",
+          "description": "Categoría del gasto",
+          "enum": [
+            "comida",
+            "transporte",
+            "supermercado",
+            "servicios",
+            "salidas",
+            "salud",
+            "gustitos",
+            "otros"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Descripción clara del gasto"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Método de pago utilizado",
+          "enum": ["yape", "plin", "efectivo", "tarjeta", "transferencia", "otro"]
+        },
+        "rawInput": {
+          "type": "string",
+          "description": "Texto original en lenguaje natural ingresado por el usuario"
+        },
+        "date": {
+          "type": "string",
+          "description": "Fecha del gasto en formato YYYY-MM-DD"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de creación generado con FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de última modificación con FieldValue.serverTimestamp()"
+        }
+      },
+      "required": [
+        "userId",
+        "amount",
+        "currency",
+        "category",
+        "description",
+        "paymentMethod",
+        "date",
+        "createdAt"
+      ]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Configuración y preferencias del usuario",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID del usuario propietario"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Nombre de pantalla del usuario"
+        },
+        "defaultCurrency": {
+          "type": "string",
+          "description": "Moneda preferida (PEN por defecto)",
+          "enum": ["PEN", "USD", "EUR"]
+        },
+        "monthlyBudget": {
+          "type": "number",
+          "description": "Presupuesto mensual opcional de referencia"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de creación"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de actualización"
+        }
+      },
+      "required": ["userId", "defaultCurrency", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Subcolección de gastos de cada usuario"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Documento de configuración y preferencias del usuario"
+    }
+  }
+}

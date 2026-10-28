@@ -1,0 +1,6 @@
+{
+  "name": "Gastos Fácil",
+  "description": "Control de gastos personales ultra rápido con lenguaje natural e inteligencia artificial",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

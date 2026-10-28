@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId == request.auth.uid &&
+             data.defaultCurrency in ['PEN', 'USD', 'EUR'] &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+             (!('monthlyBudget' in data) || (data.monthlyBudget is number && data.monthlyBudget >= 0)) &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    function isValidExpense(data) {
+      return data.userId == request.auth.uid &&
+             data.amount is number && data.amount > 0 && data.amount <= 100000000 &&
+             data.currency in ['PEN', 'USD', 'EUR'] &&
+             data.category in ['comida', 'transporte', 'supermercado', 'servicios', 'salidas', 'salud', 'gustitos', 'otros'] &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 200 &&
+             data.paymentMethod in ['yape', 'plin', 'efectivo', 'tarjeta', 'transferencia', 'otro'] &&
+             (!('rawInput' in data) || (data.rawInput is string && data.rawInput.size() <= 500)) &&
+             data.date is string && data.date.size() == 10 && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+             (!('updatedAt' in data) || (data.updatedAt is timestamp && data.updatedAt <= request.time));
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+                       request.resource.data.userId == request.auth.uid &&
+                       request.resource.data.keys().hasAll(['userId', 'defaultCurrency', 'createdAt']) &&
+                       request.resource.data.keys().hasOnly(['userId', 'displayName', 'defaultCurrency', 'monthlyBudget', 'createdAt', 'updatedAt']) &&
+                       request.resource.data.createdAt is timestamp &&
+                       request.resource.data.createdAt <= request.time &&
+                       isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) &&
+                       request.resource.data.userId == resource.data.userId &&
+                       request.resource.data.createdAt == resource.data.createdAt &&
+                       isValidUserProfile(request.resource.data) &&
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'defaultCurrency', 'monthlyBudget', 'updatedAt']);
+      allow delete: if isOwner(userId);
+
+      match /expenses/{expenseId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) &&
+                         isValidId(expenseId) &&
+                         request.resource.data.userId == request.auth.uid &&
+                         request.resource.data.keys().hasAll(['userId', 'amount', 'currency', 'category', 'description', 'paymentMethod', 'date', 'createdAt']) &&
+                         request.resource.data.keys().hasOnly(['userId', 'amount', 'currency', 'category', 'description', 'paymentMethod', 'rawInput', 'date', 'createdAt', 'updatedAt']) &&
+                         request.resource.data.createdAt is timestamp &&
+                         request.resource.data.createdAt <= request.time &&
+                         isValidExpense(request.resource.data);
+        allow update: if isOwner(userId) &&
+                         isValidId(expenseId) &&
+                         request.resource.data.userId == resource.data.userId &&
+                         request.resource.data.createdAt == resource.data.createdAt &&
+                         isValidExpense(request.resource.data) &&
+                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['amount', 'currency', 'category', 'description', 'paymentMethod', 'rawInput', 'date', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(expenseId);
+      }
+    }
+  }
+}
